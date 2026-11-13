@@ -537,6 +537,13 @@ static void nmssh_trace_callback(LIBSSH2_SESSION *session,
     // Search for the correct identity and try to authenticate
     struct libssh2_agent_publickey *identity, *prev_identity = NULL;
     while (1) {
+        if (!self.agent || !self.session) {
+            // The server disconnected us after a failed attempt (e.g., too many authentication
+            // failures). disconnect_callback freed the agent and the identities it owned, so
+            // prev_identity is dangling.
+            NMSSHLogError(@"Disconnected during agent authentication");
+            return NO;
+        }
         int error = libssh2_agent_get_identity(self.agent, &identity, prev_identity);
         if (error) {
             NMSSHLogError(@"Failed to find a valid identity for the agent");
