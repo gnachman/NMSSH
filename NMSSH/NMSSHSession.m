@@ -60,7 +60,7 @@ static void nmssh_trace_callback(LIBSSH2_SESSION *session,
         [self setPort:@(port)];
         [self setUsername:username];
         [self setConnected:NO];
-        [self setFingerprintHash:NMSSHSessionHashMD5];
+        [self setFingerprintHash:NMSSHSessionHashSHA256];
     }
 
     return self;
@@ -599,12 +599,24 @@ static void nmssh_trace_callback(LIBSSH2_SESSION *session,
             libssh2_hash = LIBSSH2_HOSTKEY_HASH_SHA1;
             hashLength = 20;
             break;
+
+        case NMSSHSessionHashSHA256:
+            libssh2_hash = LIBSSH2_HOSTKEY_HASH_SHA256;
+            hashLength = 32;
+            break;
     }
 
     const char *hash = libssh2_hostkey_hash(self.session, libssh2_hash);
     if (!hash) {
         NMSSHLogWarn(@"Unable to retrive host's fingerprint");
         return nil;
+    }
+
+    if (hashType == NMSSHSessionHashSHA256) {
+        NSData *data = [NSData dataWithBytes:hash length:hashLength];
+        NSString *base64 = [data base64EncodedStringWithOptions:0];
+        base64 = [base64 stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"="]];
+        return [@"SHA256:" stringByAppendingString:base64];
     }
 
     NSMutableString *fingerprint = [[NSMutableString alloc] initWithFormat:@"%02X", (unsigned char)hash[0]];
