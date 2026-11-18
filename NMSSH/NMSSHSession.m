@@ -1,6 +1,5 @@
 #import "NMSSHSession.h"
 #import "NMSSH+Protected.h"
-#import "NMSSHConfig.h"
 #import "NMSSHHostConfig.h"
 
 @interface NMSSHSession ()
@@ -67,16 +66,12 @@ static void nmssh_trace_callback(LIBSSH2_SESSION *session,
 }
 
 - (instancetype)initWithHost:(NSString *)host
-                     configs:(NSArray *)configs
+                  hostConfig:(NMSSHHostConfig *)resolvedHostConfig
              withDefaultPort:(NSInteger)defaultPort
              defaultUsername:(NSString *)defaultUsername {
-    // Merge matching entries from configs together.
     NMSSHHostConfig *hostConfig = [[NMSSHHostConfig alloc] init];
-    for (NMSSHConfig *config in configs) {
-        NMSSHHostConfig *matchingHostConfig = [config hostConfigForHost:host];
-        if (matchingHostConfig) {
-            [hostConfig mergeFrom:matchingHostConfig];
-        }
+    if (resolvedHostConfig) {
+        [hostConfig mergeFrom:resolvedHostConfig];
     }
 
     // Merge in defaults.
